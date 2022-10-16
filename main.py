@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-import sys
 from typing import Collection, List
-from io import BufferedRandom, IOBase
+from io import IOBase
 import asyncio
 import functools
 
