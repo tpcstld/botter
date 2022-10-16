@@ -121,8 +121,6 @@ class KeyTracker(object):
         fd.flush()
 
 
-
-
 async def main():
     tracker = KeyTracker()
 
