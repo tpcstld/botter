@@ -1,6 +1,9 @@
-use std::{io::Write, time::{Instant, Duration}};
 use phf::phf_map;
-
+use std::{
+    io::Write,
+    sync::{atomic::AtomicBool, Arc},
+    time::{Duration, Instant},
+};
 
 const EMPTY_BYTE: u8 = 0;
 
@@ -78,16 +81,19 @@ static CONTROL_CHARS_TO_VALUE: phf::Map<&'static str, u8> = phf_map! {
 };
 
 fn get_byte_code(characters: &Vec<String>) -> [u8; 8] {
-    let control_values_in_list: Vec<u8> = characters.iter()
+    let control_values_in_list: Vec<u8> = characters
+        .iter()
         .map(|character| CONTROL_CHARS_TO_VALUE.get(character))
         .flatten()
         .map(|x| x.clone())
         .collect();
-    let modifer_byte: u8 = control_values_in_list.into_iter()
+    let modifer_byte: u8 = control_values_in_list
+        .into_iter()
         .reduce(|accum, item| accum ^ item)
         .unwrap_or(0);
 
-    let key_values_in_list: Vec<u8> = characters.iter()
+    let key_values_in_list: Vec<u8> = characters
+        .iter()
         .map(|character| KEYS_TO_VALUE.get(character))
         .flatten()
         .map(|x| x.clone())
@@ -123,7 +129,7 @@ impl<'a> KeyTracker<'a> {
     fn new(fd: &'a mut std::fs::File) -> KeyTracker<'a> {
         KeyTracker {
             active_keys: vec![],
-            fd
+            fd,
         }
     }
 
@@ -160,19 +166,38 @@ impl<'a> Drop for KeyTracker<'a> {
 
 fn main() {
     let data_file = std::env::args().nth(1).expect("No data file");
-    let repeat: bool = std::env::args().nth(2).map(|x| x.parse()).unwrap_or(Result::Ok(false)).unwrap_or(false);
+    let repeat: bool = std::env::args()
+        .nth(2)
+        .map(|x| x.parse())
+        .unwrap_or(Result::Ok(false))
+        .unwrap_or(false);
     let output = std::env::args().nth(3).unwrap_or("/dev/hidg0".to_string());
 
-    loop {
-        let contents = std::fs::read_to_string(data_file.as_str())
-            .expect("Cannot read file");
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
 
-        let mut fd = std::fs::OpenOptions::new().write(true).open(output.as_str())
+    ctrlc::set_handler(move || {
+        r.store(false, std::sync::atomic::Ordering::SeqCst);
+    })
+    .expect("Error setting Ctrl-C handler");
+
+    loop {
+        let contents = std::fs::read_to_string(data_file.as_str()).expect("Cannot read file");
+
+        let mut fd = std::fs::OpenOptions::new()
+            .write(true)
+            .open(output.as_str())
             .expect("Cannot open device file.");
 
         let mut tracker = KeyTracker::new(&mut fd);
 
         for line in contents.lines() {
+            if !running.load(std::sync::atomic::Ordering::SeqCst) {
+                println!("Ctrl-C reached shutting down!");
+                tracker.stop();
+                return;
+            }
+
             let info: Vec<&str> = line.split(",").collect();
             assert!(info.len() == 3);
 
@@ -184,7 +209,7 @@ fn main() {
         }
 
         if !repeat {
-            break;
+            return;
         }
     }
 }
