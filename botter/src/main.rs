@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::{io::Write, time::{Instant, Duration}};
 use phf::phf_map;
 
 
@@ -106,6 +106,14 @@ fn get_byte_code(characters: &Vec<String>) -> [u8; 8] {
     ]
 }
 
+fn sleep(millis: u64) {
+    let start = Instant::now();
+    let duration = Duration::from_millis(millis);
+    while start.elapsed() < duration {
+        std::hint::spin_loop();
+    }
+}
+
 struct KeyTracker<'a> {
     active_keys: Vec<String>,
     fd: &'a mut std::fs::File,
@@ -120,7 +128,7 @@ impl<'a> KeyTracker<'a> {
     }
 
     fn handle_event(&mut self, key: String, pressed: bool, wait_millis: u64) {
-        std::thread::sleep(std::time::Duration::from_millis(wait_millis));
+        sleep(wait_millis);
 
         if pressed && !self.active_keys.contains(&key) {
             self.active_keys.push(key);

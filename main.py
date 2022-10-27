@@ -83,6 +83,12 @@ control_chars_to_value = {
     'Key.alt_gr': 0b00100000,
 }
 
+def sleep(millis: int) -> None:
+    start = time.perf_counter() * 1000
+    target = start + millis
+    while time.perf_counter() * 1000 < target:
+        pass
+
 # Given a set of Key characters, return the 8 byte code defined here: https://usb.org/sites/default/files/hut1_3_0.pdf
 # on page 88
 def get_byte_code(key_characters: Collection[str]) -> bytearray:
@@ -102,7 +108,7 @@ class KeyTracker(object):
         self.active_keys: List[str] = []
 
     def handle_event(self, fd: IOBase, character: str, pressed: bool, duration_milliseconds: int = 100):
-        time.sleep(duration_milliseconds / 1000)
+        sleep(duration_milliseconds)
 
         if pressed and character not in self.active_keys:
             self.active_keys.append(character)
