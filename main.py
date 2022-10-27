@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 from typing import Collection, List
 from io import IOBase
-import asyncio
 import functools
+import time
 
 DEBUG = False
+REPEAT = True
+
 NULL_CHAR = chr(0)
 EMPTY_BYTE = 0
 
@@ -99,18 +101,17 @@ class KeyTracker(object):
     def __init__(self):
         self.active_keys: List[str] = []
 
-    async def handle_event(self, fd: IOBase, character: str, pressed: bool, duration_milliseconds: int = 100):
-        await asyncio.sleep(duration_milliseconds / 1000)
+    def handle_event(self, fd: IOBase, character: str, pressed: bool, duration_milliseconds: int = 100):
+        time.sleep(duration_milliseconds / 1000)
 
         if pressed and character not in self.active_keys:
             self.active_keys.append(character)
-        else:
+        elif not pressed and character in self.active_keys:
             self.active_keys.remove(character)
-
-        print(self.active_keys)
 
         packet = get_byte_code(self.active_keys)
         fd.write(packet)
+        fd.flush()
 
     def stop(self, fd: IOBase):
         self.active_keys = []
@@ -120,18 +121,33 @@ class KeyTracker(object):
         fd.flush()
 
 
-async def main():
-    tracker = KeyTracker()
+def main():
+    i = 0
+    while True:
+        tracker = KeyTracker()
 
-    with open('data.txt', 'r') as sequence_file:
-        key_sequence = sequence_file.readlines()
+        with open('data.txt', 'r') as sequence_file:
+            key_sequence = sequence_file.readlines()
 
-    # with open('/dev/hidg0', 'rb+') as fd:
-    with open('test', 'wb') as fd:
-        for line in key_sequence:
-            [action, key, wait_millis] = line.split(',')
-            await tracker.handle_event(fd, key, action == 'Press', int(wait_millis))
+        j = 0
 
-        tracker.stop(fd)
+        with open('/dev/hidg0', 'rb+') as fd:
+        # with open('test', 'wb') as fd:
+            try:
+                for line in key_sequence:
+                    j = j + 1
+                    print('line', j)
+                    [action, key, wait_millis] = line.split(',')
+                    tracker.handle_event(fd, key, action == 'Press', int(wait_millis))
+            finally:
+                    tracker.stop(fd)
 
-asyncio.run(main())
+        if not REPEAT:
+            break
+        else:
+            print("repeated", i)
+            i = i + 1
+
+
+if __name__ == '__main__':
+    main()
