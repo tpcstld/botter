@@ -168,8 +168,8 @@ fn main() {
             let info: Vec<&str> = line.split(",").collect();
             assert!(info.len() == 3);
 
-            let key = info[0].to_string();
-            let pressed = info[1] == "Press";
+            let pressed = info[0] == "Press";
+            let key = info[1].to_string();
             let wait_millis = info[2].parse().expect("Cannot parse wait time");
 
             tracker.handle_event(key, pressed, wait_millis);
