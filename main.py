@@ -1,8 +1,10 @@
-#!/usr/bin/env python3
 from typing import Collection, List
 from io import IOBase
 import functools
 import time
+import sys
+import os
+import random
 
 DEBUG = False
 REPEAT = True
@@ -128,11 +130,24 @@ class KeyTracker(object):
 
 
 def main():
+    os.nice(-19)
     i = 0
+    args = sys.argv
+    file_name = "data.txt"
+    if len(args) > 1:
+        files = args[1:]
+    
+    file_queue = files.copy()
+
     while True:
         tracker = KeyTracker()
 
-        with open('data.txt', 'r') as sequence_file:
+        if not file_queue:
+            random.shuffle(files)
+            file_queue = files.copy()
+        file_name = file_queue.pop()
+
+        with open(file_name, 'r') as sequence_file:
             key_sequence = sequence_file.readlines()
 
         j = 0
@@ -142,7 +157,6 @@ def main():
             try:
                 for line in key_sequence:
                     j = j + 1
-                    print('line', j)
                     [action, key, wait_millis] = line.split(',')
                     tracker.handle_event(fd, key, action == 'Press', int(wait_millis))
             finally:
