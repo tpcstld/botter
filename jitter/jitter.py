@@ -62,7 +62,8 @@ async def main():
     )
 
     parser.add_argument('--port', type=int, default=8765)
-    parser.add_argument('--standalone', type=bool, default=False)
+    parser.add_argument('--standalone', action='store_true')
+    parser.set_defaults(standalone=True)
 
     args = parser.parse_args()
 
