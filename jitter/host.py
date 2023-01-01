@@ -15,7 +15,7 @@ async def main():
 
     args = parser.parse_args()
 
-    url = f'ws://{args.host}:{args.post}'
+    url = f'ws://{args.host}:{args.port}'
 
     async with connect(url) as ws:
         print(f'Connected to server on {url}')
