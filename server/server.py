@@ -3,8 +3,10 @@ import multiprocessing
 from main import loop_file
 import pathlib
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 process = None
 
