@@ -2,3 +2,4 @@ data.txt
 test
 botter/target/
 scripts/
+__pycache__/

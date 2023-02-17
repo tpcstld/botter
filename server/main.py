@@ -142,6 +142,9 @@ def run_file(filename: str) -> None:
         finally:
                 tracker.stop(fd)
 
+def loop_file(filename: str) -> None:
+    while True:
+        run_file(filename)
 
 def main():
     os.nice(-19)

@@ -1,0 +1,58 @@
+<html>
+    <head>
+      <title>Botter</title>
+    </head>
+    <body>
+      <select name="cars" id="script-name">
+      </select>
+      <button onclick="startRotation()">Start</button>
+      <button onclick="stopRotation()">Stop</button>
+
+      <script>
+        async function startRotation() {
+          const filename = document.getElementById('script-name').value;
+
+          window.localStorage.setItem('last-script', filename)
+
+          fetch('/start', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              filename,
+            }),
+          })
+        }
+
+        async function stopRotation() {
+          fetch('/stop', {
+            method: 'POST',
+          })
+        }
+
+        async function main() {
+          const lastScript = window.localStorage.getItem('last-script');
+
+          const results = await fetch('/get-scripts');
+          const data = await results.json()
+
+          const selectElement = document.getElementById('script-name');
+          for (const option of data) {
+            const element = document.createElement('option');
+            element.value = option;
+            element.text = option;
+
+            if (option === lastScript) {
+              element.selected = true;
+            }
+
+            selectElement.add(element)
+          }
+        }
+
+        main();
+      </script>
+    </body>
+</html>
