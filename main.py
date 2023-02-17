@@ -128,6 +128,20 @@ class KeyTracker(object):
         fd.write(packet)
         fd.flush()
 
+def run_file(filename: str) -> None:
+    tracker = KeyTracker()
+
+    with open(filename, 'r') as f:
+        key_sequence = f.readlines()
+
+    with open('/dev/hidg0', 'rb+') as fd:
+        try:
+            for line in key_sequence:
+                [action, key, wait_millis] = line.split(',')
+                tracker.handle_event(fd, key, action == 'Press', int(wait_millis))
+        finally:
+                tracker.stop(fd)
+
 
 def main():
     os.nice(-19)
@@ -136,31 +150,16 @@ def main():
     file_name = "data.txt"
     if len(args) > 1:
         files = args[1:]
-    
+
     file_queue = files.copy()
 
     while True:
-        tracker = KeyTracker()
-
         if not file_queue:
             random.shuffle(files)
             file_queue = files.copy()
         file_name = file_queue.pop()
 
-        with open(file_name, 'r') as sequence_file:
-            key_sequence = sequence_file.readlines()
-
-        j = 0
-
-        with open('/dev/hidg0', 'rb+') as fd:
-        # with open('test', 'wb') as fd:
-            try:
-                for line in key_sequence:
-                    j = j + 1
-                    [action, key, wait_millis] = line.split(',')
-                    tracker.handle_event(fd, key, action == 'Press', int(wait_millis))
-            finally:
-                    tracker.stop(fd)
+        run_file(file_name)
 
         if not REPEAT:
             break
